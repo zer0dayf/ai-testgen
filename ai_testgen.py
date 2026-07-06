@@ -104,6 +104,29 @@ PRESETS: dict[str, dict] = {
         "install":      "go mod download",
         "detect_files": ["go.mod"],
     },
+    "rust": {
+        "language":     "Rust",
+        "framework":    "the built-in test harness (#[test] functions)",
+        "source_glob":  "src/**/*.rs",
+        # cargo only runs integration tests placed directly in tests/ (not a
+        # nested dir), so both modes write there and are run per-target.
+        "test_dir":     "tests",
+        "bootstrap_dir":"tests",
+        "test_globs":   ["*_test.rs", "test_*.rs"],
+        "test_name":    "{stem}_ai_test.rs",
+        "test_ext":     ".rs",
+        "code_fence":   "rust",
+        "comment_prefix": "//",
+        "mock_libs":    "trait objects / dependency injection and httptest-style fakes (no real network or filesystem)",
+        # `--test {stem}` runs only this one generated integration-test target.
+        "run_cmd":      ["cargo", "test", "--test", "{stem}"],
+        "install":      "cargo build --tests",
+        "detect_files": ["Cargo.toml"],
+        "extra_rules":  ("This is a Rust integration test in tests/, compiled as a "
+                         "separate crate: it can ONLY use the crate's PUBLIC API "
+                         "(`pub` items) via `use <crate_name>::...`. Do not test "
+                         "private items. Prefer `#[test]` functions with assert!/assert_eq!."),
+    },
 }
 
 
@@ -201,6 +224,7 @@ def load_config(cli_config: str | None) -> dict:
 
     cfg.setdefault("project", PROJECT_ROOT.name)
     cfg.setdefault("comment_prefix", "#")
+    cfg.setdefault("extra_rules", "")
     cfg.setdefault("bootstrap_dir", "tests")
     cfg.setdefault("test_globs", ["test_*.py", "*_test.py"])
     cfg.setdefault("test_name", "test_{stem}" + cfg.get("test_ext", ".py"))
@@ -330,7 +354,7 @@ def extract_code_block(text: str, fence: str) -> str:
 # ── Prompts ───────────────────────────────────────────────────────────────────
 
 def _rules(cfg: dict) -> str:
-    return textwrap.dedent(f"""
+    base = textwrap.dedent(f"""
         - Write only unit tests that need no network or external services;
           mock them out using {cfg['mock_libs']}.
         - Each test must run independently.
@@ -339,6 +363,8 @@ def _rules(cfg: dict) -> str:
         - Return ONLY valid {cfg['language']} code inside a ```{cfg['code_fence']}
           ... ``` block — no prose.
     """).strip()
+    extra = cfg.get("extra_rules") or ""
+    return base + (f"\n- {extra}" if extra else "")
 
 
 def generate_diff_tests(cfg: dict, diff: str, source: str, existing: str) -> str:
@@ -427,7 +453,8 @@ def fix_test_file(cfg: dict, test_code: str, output: str, source: str) -> str:
 
 def run_tests(cfg: dict, test_file: Path) -> tuple[int, str]:
     cmd = [p.replace("{py}", sys.executable).replace("{test_path}", str(test_file))
-            .replace("{test_dir}", str(test_file.parent)) for p in cfg["run_cmd"]]
+            .replace("{test_dir}", str(test_file.parent))
+            .replace("{stem}", test_file.stem) for p in cfg["run_cmd"]]
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
     except FileNotFoundError as e:

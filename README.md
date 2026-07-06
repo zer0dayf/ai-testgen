@@ -59,7 +59,7 @@ Drop an optional `.aitestgen.toml` at your repo root (see
 `examples/aitestgen.toml.example`). Start from a preset and override what differs:
 
 ```toml
-language      = "python"           # python | javascript | go
+language      = "python"           # python | javascript | go | rust
 source_glob   = "src/**/*.py"
 test_dir      = "tests/generated"  # diff mode (ephemeral)
 bootstrap_dir = "tests"            # full mode (the real suite)
@@ -95,12 +95,24 @@ python ai_testgen.py --mode full --dry-run   # list what bootstrap would create
 
 ## Adding a language
 
+Built-in presets: `python`, `javascript`, `go`, `rust`.
+
 Add a block to `PRESETS` in `ai_testgen.py`, or just set the fields in
 `.aitestgen.toml`. A preset needs `language`, `framework`, `source_glob`,
-`test_dir`, `bootstrap_dir`, `test_globs`, `test_name`, `code_fence`, `run_cmd`,
-`install`, and `detect_files`. For non-Python targets, add the toolchain setup
-(`actions/setup-node`, `actions/setup-go`, …) via the `install` input or a step
-before the action.
+`test_dir`, `bootstrap_dir`, `test_globs`, `test_name`, `code_fence`,
+`comment_prefix`, `run_cmd`, `install`, and `detect_files`; optional
+`extra_rules` appends a language-specific instruction to the prompt. `run_cmd`
+placeholders: `{py}`, `{test_path}`, `{test_dir}`, `{stem}` (test file name
+without extension — e.g. `cargo test --test {stem}`). For non-Python targets,
+add the toolchain setup (`actions/setup-node`, `actions/setup-go`, …) via the
+`install` input or a step before the action.
+
+**Compiled languages (Go, Rust):** tests are compiled against the crate/package,
+so generated files can only exercise the **public** API. In Rust, `cargo` runs
+integration tests from the top-level `tests/` dir, so both modes write there and
+each generated target is run with `cargo test --test {stem}`. Because that dir
+overlaps real integration tests, on a Rust repo that already has tests you may
+want to set `mode: diff` explicitly rather than relying on `auto`.
 
 ## License
 
