@@ -66,6 +66,7 @@ PRESETS: dict[str, dict] = {
         "test_name":    "test_{stem}.py",
         "test_ext":     ".py",
         "code_fence":   "python",
+        "comment_prefix": "#",
         "mock_libs":    "unittest.mock (mock out sockets, network I/O, filesystem, subprocess)",
         "run_cmd":      ["{py}", "-m", "pytest", "{test_path}", "-q", "--tb=short", "--no-header"],
         "install":      "pip install -r requirements.txt pytest || pip install pytest",
@@ -81,6 +82,7 @@ PRESETS: dict[str, dict] = {
         "test_name":    "{stem}.test.js",
         "test_ext":     ".test.js",
         "code_fence":   "javascript",
+        "comment_prefix": "//",
         "mock_libs":    "jest.mock (mock out network, timers, fs)",
         "run_cmd":      ["npx", "jest", "{test_path}", "--silent"],
         "install":      "npm ci || npm install",
@@ -96,6 +98,7 @@ PRESETS: dict[str, dict] = {
         "test_name":    "{stem}_ai_test.go",
         "test_ext":     "_ai_test.go",
         "code_fence":   "go",
+        "comment_prefix": "//",
         "mock_libs":    "interfaces / net/http/httptest (avoid real network)",
         "run_cmd":      ["go", "test", "./..."],
         "install":      "go mod download",
@@ -197,6 +200,7 @@ def load_config(cli_config: str | None) -> dict:
             cfg[key] = val
 
     cfg.setdefault("project", PROJECT_ROOT.name)
+    cfg.setdefault("comment_prefix", "#")
     cfg.setdefault("bootstrap_dir", "tests")
     cfg.setdefault("test_globs", ["test_*.py", "*_test.py"])
     cfg.setdefault("test_name", "test_{stem}" + cfg.get("test_ext", ".py"))
@@ -480,8 +484,9 @@ def write_bug_report(cfg: dict, items: list[dict]) -> Path:
     return report
 
 
-def _header(base: str, head: str) -> str:
-    return (f"# AI-generated {datetime.now():%Y-%m-%d %H:%M} — {base}..{head} — "
+def _header(cfg: dict, base: str, head: str) -> str:
+    c = cfg.get("comment_prefix", "#")
+    return (f"{c} AI-generated {datetime.now():%Y-%m-%d %H:%M} — {base}..{head} — "
             "review before committing\n")
 
 
@@ -514,7 +519,7 @@ def run_diff_mode(cfg: dict, base: str, head: str, dry: bool) -> int:
     ext = cfg["test_ext"]
     name = f"test_ai_{ts}{ext if ext.startswith(('.', '_')) else '.' + ext}"
     test_file = test_dir / name
-    header = _header(base, head)
+    header = _header(cfg, base, head)
     test_file.write_text(header + "\n" + test_code, encoding="utf-8")
     print(f"✅ Wrote {test_file.relative_to(PROJECT_ROOT)}\n🧪 Running...")
 
@@ -543,7 +548,7 @@ def run_full_mode(cfg: dict, base: str, head: str, dry: bool) -> int:
         return 0
 
     boot_dir.mkdir(parents=True, exist_ok=True)
-    header = _header(base, head)
+    header = _header(cfg, base, head)
     kept, bugs = 0, []
     for src in files:
         try:
