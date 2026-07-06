@@ -1,6 +1,6 @@
-name: "AI Test Review"
-description: "Portable AI test generation & review. Writes tests for changed code (or bootstraps a whole suite), tells real bugs from broken tests. Any language."
-author: "Efe Gungor"
+name: "AI TestGen — Generate & Review Tests"
+description: "AI writes tests for changed code or bootstraps a whole suite from scratch, then tells real source bugs from broken tests. Any language."
+author: "Efe Gungor (zer0dayf)"
 branding:
   icon: "check-circle"
   color: "purple"
