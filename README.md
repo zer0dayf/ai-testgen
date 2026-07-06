@@ -42,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: your-username/ai-testgen@v1
+      - uses: zer0dayf/ai-testgen@v1
         with:
           mode: auto
           anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
