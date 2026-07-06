@@ -1,0 +1,27 @@
+# .aitestgen.toml — per-repo config for the AI Test Review action.
+# Copy into your repo root and edit. Anything omitted falls back to the language
+# preset; env vars (AITG_*) and action `with:` inputs override this file.
+
+language      = "python"            # preset: python | javascript | go
+framework     = "pytest"
+project       = "My Project"
+
+# Which source files to watch (git pathspec glob, relative to repo root).
+source_glob   = "src/**/*.py"
+
+# diff mode writes here (ephemeral, reviewed); full/bootstrap mode writes to bootstrap_dir.
+test_dir      = "tests/generated"
+bootstrap_dir = "tests"
+
+# How generated test files are named in bootstrap mode ({stem} = source file stem).
+test_name     = "test_{stem}.py"
+test_ext      = ".py"
+
+# Mock these so tests never touch the real network/services.
+mock_libs     = "unittest.mock"
+
+# Command to run a generated test file. Placeholders: {py} {test_path} {test_dir}
+run_cmd       = ["{py}", "-m", "pytest", "{test_path}", "-q", "--tb=short", "--no-header"]
+
+# Install command the CI runs for the target project's test deps.
+install       = "pip install -r requirements.txt pytest"

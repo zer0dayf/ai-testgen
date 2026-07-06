@@ -1,0 +1,35 @@
+# Drop this into ANY repo at .github/workflows/ai-test-review.yml
+# and add one provider key as a repo secret (ANTHROPIC_API_KEY / DEEPSEEK_API_KEY
+# / OPENAI_API_KEY). That's the whole integration.
+
+name: AI Test Review
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  ai-test-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0            # full history so diffs resolve
+
+      - uses: your-username/ai-testgen@v1
+        with:
+          # auto = bootstrap a full suite if the repo has no tests, else diff-only
+          mode: auto
+          # pass whichever key you use; unset ones are ignored
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # optional overrides (else read from .aitestgen.toml or auto-detected):
+          # language: python
+          # source-glob: "src/**/*.py"
+          # model: claude-sonnet-4-6

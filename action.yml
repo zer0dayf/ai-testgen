@@ -1,0 +1,151 @@
+name: "AI Test Review"
+description: "Portable AI test generation & review. Writes tests for changed code (or bootstraps a whole suite), tells real bugs from broken tests. Any language."
+author: "Efe Gungor"
+branding:
+  icon: "check-circle"
+  color: "purple"
+
+inputs:
+  mode:
+    description: "auto | diff | full. auto = bootstrap a suite if the repo has no tests, else diff-only."
+    required: false
+    default: "auto"
+  provider:
+    description: "AI provider: anthropic | deepseek | openai. Blank = auto-detect from whichever key is set."
+    required: false
+    default: ""
+  model:
+    description: "Model override (else the provider default)."
+    required: false
+    default: ""
+  anthropic-api-key:
+    description: "ANTHROPIC_API_KEY (pass a secret)."
+    required: false
+    default: ""
+  deepseek-api-key:
+    description: "DEEPSEEK_API_KEY (pass a secret)."
+    required: false
+    default: ""
+  openai-api-key:
+    description: "OPENAI_API_KEY (pass a secret)."
+    required: false
+    default: ""
+  config-path:
+    description: "Path to .aitestgen.toml/.json (else auto-discovered at repo root)."
+    required: false
+    default: ""
+  language:
+    description: "Preset override: python | javascript | go (else from config or auto-detected)."
+    required: false
+    default: ""
+  source-glob:
+    description: "Git pathspec glob of source files to watch (overrides config)."
+    required: false
+    default: ""
+  python-version:
+    description: "Python used to run the orchestrator (the target repo can be any language)."
+    required: false
+    default: "3.11"
+  install:
+    description: "Shell command to install the target project's test deps (else the config's install field)."
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python (orchestrator)
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install AI SDKs
+      shell: bash
+      run: pip install --quiet anthropic openai
+
+    - name: Install target project deps
+      shell: bash
+      env:
+        AITG_LANGUAGE: ${{ inputs.language }}
+        AITG_SOURCE_GLOB: ${{ inputs.source-glob }}
+      run: |
+        if [ -n "${{ inputs.install }}" ]; then
+          bash -c "${{ inputs.install }}" || true
+        else
+          eval "$(python "$GITHUB_ACTION_PATH/ai_testgen.py" --print-install ${{ inputs.config-path && format('--config {0}', inputs.config-path) || '' }})" || true
+        fi
+
+    - name: Determine diff refs
+      id: refs
+      shell: bash
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          echo "base=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          echo "head=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+        else
+          echo "base=HEAD~1" >> "$GITHUB_OUTPUT"
+          echo "head=HEAD"   >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Run AI Test Review
+      id: ai
+      shell: bash
+      env:
+        AI_PROVIDER: ${{ inputs.provider }}
+        AI_MODEL: ${{ inputs.model }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        DEEPSEEK_API_KEY: ${{ inputs.deepseek-api-key }}
+        OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+        AITG_LANGUAGE: ${{ inputs.language }}
+        AITG_SOURCE_GLOB: ${{ inputs.source-glob }}
+      run: |
+        python "$GITHUB_ACTION_PATH/ai_testgen.py" \
+          --mode "${{ inputs.mode }}" \
+          --base-ref "${{ steps.refs.outputs.base }}" \
+          --head-ref "${{ steps.refs.outputs.head }}" \
+          ${{ inputs.config-path && format('--config {0}', inputs.config-path) || '' }}
+      continue-on-error: true
+
+    - name: Upload generated tests
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ai-generated-tests
+        path: |
+          ${{ github.workspace }}/**/generated/**
+          ${{ github.workspace }}/tests/**
+        if-no-files-found: ignore
+        retention-days: 14
+
+    - name: Comment bug report on PR
+      if: ${{ steps.ai.outcome == 'failure' && github.event_name == 'pull_request' && hashFiles('bug_report.md') != '' }}
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner, repo: context.repo.repo,
+            body: fs.readFileSync('bug_report.md', 'utf8'),
+          });
+
+    - name: Open bug issue on push
+      if: ${{ steps.ai.outcome == 'failure' && github.event_name == 'push' && hashFiles('bug_report.md') != '' }}
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const commit = context.sha.substring(0, 7);
+          await github.rest.issues.create({
+            owner: context.repo.owner, repo: context.repo.repo,
+            title: `🐛 AI Test Review: bug detected in ${commit}`,
+            body: fs.readFileSync('bug_report.md', 'utf8'),
+            labels: ['bug', 'ai-detected'],
+          });
+
+    - name: Fail only on a real bug
+      if: ${{ steps.ai.outcome == 'failure' && hashFiles('bug_report.md') != '' }}
+      shell: bash
+      run: |
+        echo "❌ AI test review found a real source bug."
+        exit 1
