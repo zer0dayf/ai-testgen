@@ -199,7 +199,8 @@ ayarlanabilir. Öncelik sırası (sonraki kazanır):
 Motor, tek dosyalık sade bir CLI'dır — her CI'da veya kendi makinenizde çalışır:
 
 ```bash
-pip install -r requirements.txt  # AI SDK'ları (+ Python < 3.11'de tomli)
+pip install -r requirements.txt                 # AI SDK'ları (+ Python < 3.11'de tomli)
+eval "$(python ai_testgen.py --print-install)"  # KENDİ projenizin test bağımlılıkları (pytest / npm ci / …)
 
 # son commit'iniz için test üret + incele:
 ANTHROPIC_API_KEY=sk-... python ai_testgen.py --mode auto --base-ref HEAD~1 --head-ref HEAD
@@ -208,6 +209,11 @@ ANTHROPIC_API_KEY=sk-... python ai_testgen.py --mode auto --base-ref HEAD~1 --he
 python ai_testgen.py --print-config          # çözümlenen config'i göster
 python ai_testgen.py --mode full --dry-run   # bootstrap'in neler oluşturacağını listele
 ```
+
+`--print-install` satırı, test edilen projenin test bağımlılıklarını kurar —
+Python için `pytest`, JavaScript için `npm ci` vb.; komut, algılanan dil
+preset'inden (veya `.aitestgen.toml`'unuzdan) çözümlenir. Action'ın CI'da
+çalıştırdığı komutun birebir aynısıdır, yani yerel ve CI aynı şekilde davranır.
 
 ## Sorun giderme
 

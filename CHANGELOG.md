@@ -7,6 +7,8 @@
   step now installs from it.
 - Version **upper bounds** guard against breaking major SDK releases taking
   down all consumers at once; minor/patch updates still install freely.
+- Local-run docs now install the target project's test deps too, via
+  `eval "$(python ai_testgen.py --print-install)"` — same command CI uses.
 
 ## 2026-07-16 — docs (no version bump, `v1` tag moved)
 

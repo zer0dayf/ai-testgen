@@ -191,7 +191,8 @@ Precedence (later wins): **preset < config file < env vars < action inputs/CLI f
 The engine is a plain, single-file CLI — works in any CI or on your machine:
 
 ```bash
-pip install -r requirements.txt  # AI SDKs (+ tomli on Python < 3.11)
+pip install -r requirements.txt                 # AI SDKs (+ tomli on Python < 3.11)
+eval "$(python ai_testgen.py --print-install)"  # YOUR project's test deps (pytest / npm ci / …)
 
 # generate + review tests for your last commit:
 ANTHROPIC_API_KEY=sk-... python ai_testgen.py --mode auto --base-ref HEAD~1 --head-ref HEAD
@@ -200,6 +201,11 @@ ANTHROPIC_API_KEY=sk-... python ai_testgen.py --mode auto --base-ref HEAD~1 --he
 python ai_testgen.py --print-config          # show the resolved config
 python ai_testgen.py --mode full --dry-run   # list what bootstrap would create
 ```
+
+The `--print-install` line installs the test dependencies of the project being
+tested — `pytest` for Python, `npm ci` for JavaScript, and so on, resolved from
+the detected language preset (or your `.aitestgen.toml`). It's the exact same
+command the action runs in CI, so local and CI behave the same.
 
 ## Troubleshooting
 
