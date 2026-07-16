@@ -199,7 +199,7 @@ ayarlanabilir. Öncelik sırası (sonraki kazanır):
 Motor, tek dosyalık sade bir CLI'dır — her CI'da veya kendi makinenizde çalışır:
 
 ```bash
-pip install anthropic            # veya: openai (DeepSeek için de kullanılır)
+pip install -r requirements.txt  # AI SDK'ları (+ Python < 3.11'de tomli)
 
 # son commit'iniz için test üret + incele:
 ANTHROPIC_API_KEY=sk-... python ai_testgen.py --mode auto --base-ref HEAD~1 --head-ref HEAD

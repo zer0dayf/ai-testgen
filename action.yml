@@ -61,7 +61,7 @@ runs:
 
     - name: Install AI SDKs
       shell: bash
-      run: pip install --quiet anthropic openai
+      run: pip install --quiet -r "$GITHUB_ACTION_PATH/requirements.txt"
 
     - name: Install target project deps
       shell: bash

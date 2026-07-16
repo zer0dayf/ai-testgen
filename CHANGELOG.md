@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-16 — pinned SDK installs
+
+- Added `requirements.txt` for the orchestrator's own deps (`anthropic`,
+  `openai`, plus `tomli` on Python < 3.11); the action's "Install AI SDKs"
+  step now installs from it.
+- Version **upper bounds** guard against breaking major SDK releases taking
+  down all consumers at once; minor/patch updates still install freely.
+
 ## 2026-07-16 — docs (no version bump, `v1` tag moved)
 
 - README rewritten around a step-by-step installation guide: workflow file

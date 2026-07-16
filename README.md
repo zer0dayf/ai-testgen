@@ -191,7 +191,7 @@ Precedence (later wins): **preset < config file < env vars < action inputs/CLI f
 The engine is a plain, single-file CLI — works in any CI or on your machine:
 
 ```bash
-pip install anthropic            # or: openai (also used for DeepSeek)
+pip install -r requirements.txt  # AI SDKs (+ tomli on Python < 3.11)
 
 # generate + review tests for your last commit:
 ANTHROPIC_API_KEY=sk-... python ai_testgen.py --mode auto --base-ref HEAD~1 --head-ref HEAD
