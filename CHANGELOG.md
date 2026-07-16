@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-07-16 — docs (no version bump, `v1` tag moved)
+
+- README rewritten around a step-by-step installation guide: workflow file
+  (with the commonly missed `fetch-depth: 0` and `permissions:` lines
+  explained), getting an API key, adding the repo secret, what the first run
+  does, and where results land (artifact / PR comment / issue).
+- New sections: non-Python project setup, config precedence, and a
+  troubleshooting table.
+- Turkish translation added as `README.tr.md`, cross-linked from both READMEs.
+
 ## v1.0.0 — 2026-07-06
 
 Initial release.
